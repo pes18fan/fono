@@ -4,58 +4,69 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 type model struct {
-	status    chan AudioStatus
-	commander chan AudioCommand
+	statusChan      chan Status
+	cmdChan         chan AudioCommand
+	currentPosition time.Duration
+	currentLength   time.Duration
+	paused          bool
+}
+
+// tea message type for status updates
+type StatusMsg Status
+
+func listenForStatus(statusChan <-chan Status) tea.Cmd {
+	return func() tea.Msg {
+		return StatusMsg(<-statusChan)
+	}
 }
 
 func initialModel() model {
-	status := make(chan AudioStatus, 1)
-	commander := make(chan AudioCommand)
-
-	return model{status, commander}
+	return model{
+		statusChan: make(chan Status),
+		cmdChan:    make(chan AudioCommand),
+	}
 }
 
 func (m model) Init() tea.Cmd {
-	return nil
+	return listenForStatus(m.statusChan)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-
-	// Is it a key press?
+	case StatusMsg:
+		switch status := msg.(type) {
+		case PositionUpdate:
+			m.currentPosition = status.Position
+			m.currentLength = status.Length
+		case PlayStateUpdate:
+			m.paused = status.Paused
+		}
+		return m, listenForStatus(m.statusChan)
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		case "p":
-			m.commander <- playpause
+			m.cmdChan <- playpause
 		}
 	}
 
-	// Return the updated model to the Bubble Tea runtime for processing.
-	// Note that we're not returning a command.
 	return m, nil
 }
 
 func (m model) View() string {
-	// The header
 	s := "fonograpff\n\n"
 
-	status := <-m.status
-
-	// The footer
-	s += "Duration: "
-	s += status.length.String() + "\n"
-
-	s += "Position: "
-	s += status.position.String() + "\n"
-
-	s += "Press p to pause.\n"
+	s += "Duration: " + m.currentLength.String() + "\n"
+	s += "Position: " + m.currentPosition.String() + "\n"
+	s += "Status: " + map[bool]string{true: "Paused", false: "Playing"}[m.paused] + "\n\n"
+	s += "Press p to play/pause.\n"
 	s += "Press q to quit.\n"
 
 	// Send the UI for rendering
@@ -66,7 +77,7 @@ func main() {
 	model := initialModel()
 	p := tea.NewProgram(model)
 
-	err := Play("homies.mp3", model.status, model.commander)
+	err := Play("homies.mp3", model.statusChan, model.cmdChan)
 	if err != nil {
 		log.Fatal(err)
 	}

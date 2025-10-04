@@ -18,13 +18,7 @@ const (
 	playpause AudioCommand = iota
 )
 
-// status updated on every second of playback
-type AudioStatus struct {
-	length   time.Duration
-	position time.Duration
-}
-
-func Play(file string, status chan AudioStatus, commander chan AudioCommand) error {
+func Play(file string, statusChan chan Status, cmdChan chan AudioCommand) error {
 	done := make(chan bool, 1)
 
 	if !strings.HasSuffix(file, ".mp3") {
@@ -51,15 +45,28 @@ func Play(file string, status chan AudioStatus, commander chan AudioCommand) err
 			done <- true
 		})))
 
+		lastPaused := false
 		for {
 			select {
 			case <-done:
 				return
+			case cmd := <-cmdChan:
+				speaker.Lock()
+				switch cmd {
+				case playpause:
+					ctrl.Paused = !ctrl.Paused
+					statusChan <- PlayStateUpdate{Paused: ctrl.Paused}
+				}
+				speaker.Unlock()
 			case <-time.After(time.Second):
 				speaker.Lock()
-				status <- AudioStatus{
-					length:   format.SampleRate.D(streamer.Len()).Round(time.Second),
-					position: format.SampleRate.D(streamer.Position()).Round(time.Second),
+				statusChan <- PositionUpdate{
+					Length:   format.SampleRate.D(streamer.Len()).Round(time.Second),
+					Position: format.SampleRate.D(streamer.Position()).Round(time.Second),
+				}
+				if ctrl.Paused != lastPaused {
+					statusChan <- PlayStateUpdate{Paused: ctrl.Paused}
+					lastPaused = ctrl.Paused
 				}
 				speaker.Unlock()
 			}
