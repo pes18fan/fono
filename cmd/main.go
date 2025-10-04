@@ -7,9 +7,13 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type model struct {
+	termWidth  int
+	termHeight int
+
 	statusChan      chan Status
 	cmdChan         chan AudioCommand
 	currentPosition time.Duration
@@ -55,13 +59,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "p":
 			m.cmdChan <- playpause
 		}
+	case tea.WindowSizeMsg:
+		m.termHeight = msg.Height
+		m.termWidth = msg.Width
 	}
 
 	return m, nil
 }
 
 func (m model) View() string {
-	s := "fonograpff\n\n"
+	headingStyle := lipgloss.NewStyle().
+		Width(m.termWidth).
+		Align(lipgloss.Center).
+		Foreground(lipgloss.Color("86"))
+	s := headingStyle.Render("KASET")
+	s += "\n\n"
 
 	s += "Duration: " + m.currentLength.String() + "\n"
 	s += "Position: " + m.currentPosition.String() + "\n"

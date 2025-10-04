@@ -1,4 +1,4 @@
-# fonograpff
+# kaset
 
 Terminal-based music player.
 
