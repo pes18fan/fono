@@ -72,7 +72,7 @@ func (m model) View() string {
 		Width(m.termWidth).
 		Align(lipgloss.Center).
 		Foreground(lipgloss.Color("86"))
-	s := headingStyle.Render("KASET")
+	s := headingStyle.Render("Fono")
 	s += "\n\n"
 
 	s += "Duration: " + m.currentLength.String() + "\n"

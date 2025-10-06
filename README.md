@@ -1,4 +1,4 @@
-# kaset
+# fono
 
 Terminal-based music player.
 
