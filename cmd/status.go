@@ -18,3 +18,11 @@ type PlayStateUpdate struct {
 }
 
 func (PlayStateUpdate) isStatus() {}
+
+type AudioInfoUpdate struct {
+	Artist string
+	Title  string
+	Album  string
+}
+
+func (AudioInfoUpdate) isStatus() {}

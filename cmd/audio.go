@@ -10,6 +10,7 @@ import (
 	"github.com/gopxl/beep"
 	"github.com/gopxl/beep/mp3"
 	"github.com/gopxl/beep/speaker"
+	tag "github.com/unitnotes/audiotag"
 )
 
 type AudioCommand int
@@ -29,14 +30,27 @@ func Play(file string, statusChan chan Status, cmdChan chan AudioCommand) error 
 	if err != nil {
 		return err
 	}
+	log.Println("opened", file)
 
 	streamer, format, err := mp3.Decode(f)
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Println("set up streamer")
 
 	go func() {
 		defer streamer.Close()
+
+		m, err := tag.ReadFrom(f)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Println("read tags from", file)
+		statusChan <- AudioInfoUpdate{
+			Artist: m.Artist(),
+			Title:  m.Title(),
+			Album:  m.Album(),
+		}
 
 		speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
 
@@ -44,6 +58,7 @@ func Play(file string, statusChan chan Status, cmdChan chan AudioCommand) error 
 		speaker.Play(beep.Seq(ctrl, beep.Callback(func() {
 			done <- true
 		})))
+		log.Println("playing", file)
 
 		lastPaused := false
 		for {
@@ -54,6 +69,7 @@ func Play(file string, statusChan chan Status, cmdChan chan AudioCommand) error 
 				speaker.Lock()
 				switch cmd {
 				case playpause:
+					log.Println("received playpause command")
 					ctrl.Paused = !ctrl.Paused
 					statusChan <- PlayStateUpdate{Paused: ctrl.Paused}
 				}

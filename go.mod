@@ -1,4 +1,4 @@
-module fonograpff
+module fono
 
 go 1.25.1
 
@@ -6,6 +6,7 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/gopxl/beep v1.4.1
+	github.com/unitnotes/audiotag v0.1.0
 )
 
 require (
