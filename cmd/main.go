@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -20,6 +21,7 @@ type model struct {
 
 	currentPosition time.Duration
 	currentLength   time.Duration
+	progress        progress.Model
 	paused          bool
 	currentArtist   string
 	currentTitle    string
@@ -39,6 +41,7 @@ func initialModel() model {
 	return model{
 		statusChan: make(chan Status),
 		cmdChan:    make(chan AudioCommand),
+		progress:   progress.New(progress.WithScaledGradient("#FF7CCB", "#FDFF8C")),
 	}
 }
 
@@ -80,22 +83,26 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	headingStyle := lipgloss.NewStyle().
+	centered := lipgloss.NewStyle().
 		Width(m.termWidth).
-		Align(lipgloss.Center).
-		Foreground(lipgloss.Color("86"))
-	s := headingStyle.Render("Fono")
+		Align(lipgloss.Center)
+
+	s := centered.
+		Foreground(lipgloss.Color("86")).
+		Render("Fono")
 	s += "\n\n"
 
-	infoStyle := lipgloss.NewStyle().
-		Width(m.termWidth).
-		Align(lipgloss.Center).
-		Foreground(lipgloss.Color("87"))
-	s += infoStyle.Render(fmt.Sprintf("%s\n%s\n%s", m.currentTitle, m.currentArtist, m.currentAlbum))
+	s += centered.
+		Foreground(lipgloss.Color("87")).
+		Render(fmt.Sprintf("%s\n%s\n%s", m.currentTitle, m.currentArtist, m.currentAlbum))
 	s += "\n\n"
 
-	s += "Duration: " + m.currentLength.String() + "\n"
-	s += "Position: " + m.currentPosition.String() + "\n"
+	if m.currentLength != 0 {
+		percent := float64(m.currentPosition) / float64(m.currentLength)
+		s += centered.Render("Progress\n" + m.progress.ViewAs(percent) + "\n")
+	}
+
+	s += "\n"
 	s += "Status: " + map[bool]string{true: "Paused", false: "Playing"}[m.paused] + "\n\n"
 	s += "Press p to play/pause.\n"
 	s += "Press q to quit.\n"
