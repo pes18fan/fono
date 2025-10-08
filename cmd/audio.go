@@ -8,8 +8,11 @@ import (
 	"time"
 
 	"github.com/gopxl/beep"
+	"github.com/gopxl/beep/flac"
 	"github.com/gopxl/beep/mp3"
 	"github.com/gopxl/beep/speaker"
+	"github.com/gopxl/beep/vorbis"
+	"github.com/gopxl/beep/wav"
 	tag "github.com/unitnotes/audiotag"
 )
 
@@ -22,20 +25,40 @@ const (
 func Play(file string, statusChan chan Status, cmdChan chan AudioCommand) error {
 	done := make(chan bool, 1)
 
-	if !strings.HasSuffix(file, ".mp3") {
-		return fmt.Errorf("only the mp3 format is supported")
-	}
-
 	f, err := os.Open(file)
 	if err != nil {
 		return err
 	}
 	log.Println("opened", file)
 
-	streamer, format, err := mp3.Decode(f)
-	if err != nil {
-		log.Fatal(err)
+	var streamer beep.StreamSeekCloser
+	var format beep.Format
+
+	switch {
+	case strings.HasSuffix(file, ".mp3"):
+		streamer, format, err = mp3.Decode(f)
+		if err != nil {
+			log.Fatal(err)
+		}
+	case strings.HasSuffix(file, ".flac"):
+		streamer, format, err = flac.Decode(f)
+		if err != nil {
+			log.Fatal(err)
+		}
+	case strings.HasSuffix(file, ".ogg"):
+		streamer, format, err = vorbis.Decode(f)
+		if err != nil {
+			log.Fatal(err)
+		}
+	case strings.HasSuffix(file, ".wav"):
+		streamer, format, err = wav.Decode(f)
+		if err != nil {
+			log.Fatal(err)
+		}
+	default:
+		return fmt.Errorf("only mp3, flac, wav and ogg formats are supported")
 	}
+
 	log.Println("set up streamer")
 
 	go func() {
