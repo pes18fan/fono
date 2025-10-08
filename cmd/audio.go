@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -29,7 +30,23 @@ func Play(file string, statusChan chan Status, cmdChan chan AudioCommand) error 
 	if err != nil {
 		return err
 	}
+	// Closing the streamer later will close the file itself, so don't defer close it here
 	log.Println("opened", file)
+
+	var artist, title, album string
+	m, err := tag.ReadFrom(f)
+	if err != nil {
+		log.Println("failed to read tags from", file, ":", err)
+	} else {
+		artist = m.Artist()
+		title = m.Title()
+		album = m.Album()
+		log.Println("read tags from", file)
+	}
+
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		return fmt.Errorf("failed to seek back to start: %v", err)
+	}
 
 	var streamer beep.StreamSeekCloser
 	var format beep.Format
@@ -38,22 +55,22 @@ func Play(file string, statusChan chan Status, cmdChan chan AudioCommand) error 
 	case strings.HasSuffix(file, ".mp3"):
 		streamer, format, err = mp3.Decode(f)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	case strings.HasSuffix(file, ".flac"):
 		streamer, format, err = flac.Decode(f)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	case strings.HasSuffix(file, ".ogg"):
 		streamer, format, err = vorbis.Decode(f)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	case strings.HasSuffix(file, ".wav"):
 		streamer, format, err = wav.Decode(f)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 	default:
 		return fmt.Errorf("only mp3, flac, wav and ogg formats are supported")
@@ -64,15 +81,10 @@ func Play(file string, statusChan chan Status, cmdChan chan AudioCommand) error 
 	go func() {
 		defer streamer.Close()
 
-		m, err := tag.ReadFrom(f)
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Println("read tags from", file)
 		statusChan <- AudioInfoUpdate{
-			Artist: m.Artist(),
-			Title:  m.Title(),
-			Album:  m.Album(),
+			Artist: artist,
+			Title:  title,
+			Album:  album,
 		}
 
 		speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
@@ -104,8 +116,8 @@ func Play(file string, statusChan chan Status, cmdChan chan AudioCommand) error 
 					Position: format.SampleRate.D(streamer.Position()).Round(time.Second),
 				}
 				if ctrl.Paused != lastPaused {
-					statusChan <- PlayStateUpdate{Paused: ctrl.Paused}
 					lastPaused = ctrl.Paused
+					statusChan <- PlayStateUpdate{Paused: ctrl.Paused}
 				}
 				speaker.Unlock()
 			}
