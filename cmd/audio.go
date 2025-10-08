@@ -23,6 +23,8 @@ const (
 	playpause AudioCommand = iota
 )
 
+const POSITION_UPDATE_INTERVAL = time.Second
+
 func Play(file string, statusChan chan Status, cmdChan chan AudioCommand) error {
 	done := make(chan bool, 1)
 
@@ -33,6 +35,7 @@ func Play(file string, statusChan chan Status, cmdChan chan AudioCommand) error 
 	// Closing the streamer later will close the file itself, so don't defer close it here
 	log.Println("opened", file)
 
+	// Grab metadata
 	var artist, title, album string
 	m, err := tag.ReadFrom(f)
 	if err != nil {
@@ -44,6 +47,7 @@ func Play(file string, statusChan chan Status, cmdChan chan AudioCommand) error 
 		log.Println("read tags from", file)
 	}
 
+	// Seek the file back to the start before creating the streamer
 	if _, err := f.Seek(0, io.SeekStart); err != nil {
 		return fmt.Errorf("failed to seek back to start: %v", err)
 	}
@@ -51,6 +55,7 @@ func Play(file string, statusChan chan Status, cmdChan chan AudioCommand) error 
 	var streamer beep.StreamSeekCloser
 	var format beep.Format
 
+	// Create a streamer for the file if its in a supported format
 	switch {
 	case strings.HasSuffix(file, ".mp3"):
 		streamer, format, err = mp3.Decode(f)
@@ -81,6 +86,7 @@ func Play(file string, statusChan chan Status, cmdChan chan AudioCommand) error 
 	go func() {
 		defer streamer.Close()
 
+		// Send the metadata out immediately
 		statusChan <- AudioInfoUpdate{
 			Artist: artist,
 			Title:  title,
@@ -109,7 +115,7 @@ func Play(file string, statusChan chan Status, cmdChan chan AudioCommand) error 
 					statusChan <- PlayStateUpdate{Paused: ctrl.Paused}
 				}
 				speaker.Unlock()
-			case <-time.After(time.Second):
+			case <-time.After(POSITION_UPDATE_INTERVAL):
 				speaker.Lock()
 				statusChan <- PositionUpdate{
 					Length:   format.SampleRate.D(streamer.Len()).Round(time.Second),
