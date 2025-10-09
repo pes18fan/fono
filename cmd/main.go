@@ -20,6 +20,11 @@ const (
 	songSelectScreen
 )
 
+// HACK: Currently the filepicker and now playing model are both stuffed in
+// one model struct and chosen based on an enum value. It works, but is not
+// really an ideal way to do it; so you should probably change this to be
+// based on a multi-model structure, as bubbletea does support that sort of
+// UI hierarchy.
 type model struct {
 	activeScreen activeScreen
 	quitting     bool
@@ -209,20 +214,22 @@ func (m model) View() string {
 			playing:       "Playing",
 			noTrackLoaded: "Track not loaded",
 		}[m.playState]
+		s += "\n\n"
 
+		percent := 0.0
 		if m.currentLength != 0 {
-			s += "\n\n"
-			percent := float64(m.currentPosition) / float64(m.currentLength)
-			s += centeredStyle.
-				Bold(true).
-				Foreground(lipgloss.Color("#4fefca")).
-				Render("Progress")
-			s += "\n"
-			s += centered(m.progress.ViewAs(percent) + "\n\n")
+			percent = float64(m.currentPosition) / float64(m.currentLength)
 		}
 
+		s += centeredStyle.
+			Bold(true).
+			Foreground(lipgloss.Color("#4fefca")).
+			Render("Progress")
 		s += "\n"
+		s += centered(m.progress.ViewAs(percent))
+		s += "\n\n"
 
+		s += "\n"
 		s += lipgloss.NewStyle().
 			Bold(true).
 			Foreground(lipgloss.Color("#4fefca")).
