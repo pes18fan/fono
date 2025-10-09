@@ -26,6 +26,9 @@ const (
 
 const POSITION_UPDATE_INTERVAL = time.Second
 
+// Start up the audio unit.
+// The unit accepts, processes and plays audio files over a channel.
+// It should be run in a goroutine separate from the main one.
 func StartPlayer(
 	fileChan <-chan string,
 	statusChan chan<- Status,
