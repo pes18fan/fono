@@ -2,6 +2,14 @@ package main
 
 import "time"
 
+type PlayState int
+
+const (
+	playing PlayState = iota
+	paused
+	noTrackLoaded
+)
+
 // A status message sent out by the beep audio unit to the bubbletea UI.
 // Status structs, alongside acting as a notifier for changes, also provide
 // information about the change.
@@ -20,7 +28,7 @@ func (PositionUpdate) isStatus() {}
 
 // Status update sent out when a track is paused or unpaused.
 type PlayStateUpdate struct {
-	Paused bool
+	PlayState PlayState
 }
 
 func (PlayStateUpdate) isStatus() {}
@@ -34,3 +42,9 @@ type AudioInfoUpdate struct {
 }
 
 func (AudioInfoUpdate) isStatus() {}
+
+type ErrorUpdate struct {
+	Err error
+}
+
+func (ErrorUpdate) isStatus() {}
