@@ -2,6 +2,8 @@
 
 Terminal-based music player.
 
+Still early in development!
+
 ## Usage
 
 Just invoke it on the terminal:
