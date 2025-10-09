@@ -221,6 +221,7 @@ func (m model) View() string {
 			percent = float64(m.currentPosition) / float64(m.currentLength)
 		}
 
+		// TODO: Make the progress bar animated, following the docs by Charm
 		s += centeredStyle.
 			Bold(true).
 			Foreground(lipgloss.Color("#4fefca")).
