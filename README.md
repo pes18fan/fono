@@ -2,6 +2,39 @@
 
 Terminal-based music player.
 
+## Usage
+
+Just invoke it on the terminal:
+
+```
+fono
+```
+
+It'll show you a filepicker where you can choose an audio file from the current
+directory. Currently, `mp3`, `wav`, `flac` and `ogg` files are supported. On
+choosing a file it will take you to the player screen where you can pause/play
+the file, change to another one or quit.
+
+## Building
+
+You'll need the Go compiler.
+
+Clone the repo:
+
+```
+git clone https://github.com/pes18fan/fono.git
+```
+
+Go to the `fono` directory, then get the required libraries and build it to get
+the `fono` binary by running
+
+```
+go mod tidy
+go build ./cmd
+```
+
+Have fun!
+
 ## Why?
 
 Main reason behind the existence of this is to provide a fresh take on the 
