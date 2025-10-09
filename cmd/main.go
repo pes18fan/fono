@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -169,40 +168,81 @@ func (m model) View() string {
 		return ""
 	}
 
-	var s string
-	centered := lipgloss.NewStyle().
+	centeredStyle := lipgloss.NewStyle().
 		Width(m.termWidth).
 		Align(lipgloss.Center)
+	centered := centeredStyle.Render
 
-	s = centered.
-		Foreground(lipgloss.Color("86")).
+	s := "\n"
+	s += centeredStyle.
+		Foreground(lipgloss.Color("#4fefca")).
+		Bold(true).
 		Render("Fono")
 	s += "\n\n"
 
 	if m.activeScreen == nowPlayingScreen {
-		s += centered.
-			Foreground(lipgloss.Color("87")).
-			Render(fmt.Sprintf("%s\n%s\n%s", m.currentTitle, m.currentArtist, m.currentAlbum))
+		tags := centeredStyle.Foreground(lipgloss.Color("#4fefb0")).Render
+
+		s += tags(m.currentTitle)
+		if m.currentTitle != "" {
+			s += "\n"
+		}
+
+		s += tags(m.currentArtist)
+		if m.currentArtist != "" {
+			s += "\n"
+		}
+
+		s += tags(m.currentAlbum)
+		if m.currentAlbum != "" {
+			s += "\n"
+		}
+
 		s += "\n\n"
 
+		s += lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("#4fefca")).
+			Render("Status: ")
+		s += map[PlayState]string{
+			paused:        "Paused",
+			playing:       "Playing",
+			noTrackLoaded: "Track not loaded",
+		}[m.playState]
+
 		if m.currentLength != 0 {
+			s += "\n\n"
 			percent := float64(m.currentPosition) / float64(m.currentLength)
-			s += centered.Render("Progress\n" + m.progress.ViewAs(percent) + "\n")
+			s += centeredStyle.
+				Bold(true).
+				Foreground(lipgloss.Color("#4fefca")).
+				Render("Progress")
+			s += "\n"
+			s += centered(m.progress.ViewAs(percent) + "\n\n")
 		}
 
 		s += "\n"
-		s += "Status: " + map[PlayState]string{paused: "Paused", playing: "Playing", noTrackLoaded: "Track not loaded"}[m.playState] + "\n\n"
-		s += "Press p to play/pause.\n"
-		s += "Press f to pick another file.\n"
-		s += "Press q to quit.\n"
+
+		s += lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("#4fefca")).
+			Render("Controls: ")
+		s += "\n"
+		s += "    Press p to play/pause.\n"
+		s += "    Press f to pick another file.\n"
+		s += "    Press q to quit.\n"
 	} else {
-		s += "Current directory: " + m.filepicker.CurrentDirectory + "\n"
 		if m.err != nil {
-			s += m.filepicker.Styles.DisabledFile.Render(m.err.Error())
+			s += centered(
+				m.filepicker.Styles.DisabledFile.Render(m.err.Error()),
+			)
 		} else if m.selectedFile == "" {
-			s += "Pick a file:"
+			s += centered("Pick a file:")
 		} else {
-			s += "Selected file: " + m.filepicker.Styles.Selected.Render(m.selectedFile)
+			s += centered(
+				"Selected file: " +
+					m.filepicker.Styles.Selected.Render(m.selectedFile),
+			)
 		}
 		s += "\n\n" + m.filepicker.View() + "\n"
 	}
