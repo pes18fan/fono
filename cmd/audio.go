@@ -25,6 +25,7 @@ const (
 )
 
 const POSITION_UPDATE_INTERVAL = time.Second
+const RESAMPLE_QUALITY_FACTOR = 4
 
 // Start up the audio unit.
 // The unit accepts, processes and plays audio files over a channel.
@@ -35,6 +36,7 @@ func StartPlayer(
 	cmdChan <-chan AudioCommand,
 ) {
 	initialized := false
+	speakerSampleRate := beep.SampleRate(-1)
 
 outer:
 	for {
@@ -104,19 +106,42 @@ outer:
 		// Careful not to double-initialize the speaker!
 		if !initialized {
 			speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
+			speakerSampleRate = format.SampleRate
 			initialized = true
 		}
 
-		// Send the metadata out immediately
-		statusChan <- AudioInfoUpdate{
-			Artist: artist,
-			Title:  title,
-			Album:  album,
+		// If the chosen file has a different sample rate than that of the
+		// initialized speaker, we need to resample it to make it sound right
+		var resampled *beep.Resampler
+		resampled = nil
+		if speakerSampleRate != format.SampleRate && speakerSampleRate != -1 {
+			resampled = beep.Resample(
+				RESAMPLE_QUALITY_FACTOR,
+				format.SampleRate,
+				speakerSampleRate,
+				streamer,
+			)
 		}
 
-		ctrl := &beep.Ctrl{Streamer: streamer, Paused: false}
-		done := make(chan bool)
+		// Send the metadata out, only if the file had at least a title
+		// Otherwise we'd have no info showing on the player, we want at least
+		// the filename to show up
+		if title != "" {
+			statusChan <- AudioInfoUpdate{
+				Artist: artist,
+				Title:  title,
+				Album:  album,
+			}
+		}
 
+		var ctrl *beep.Ctrl
+		if resampled != nil {
+			ctrl = &beep.Ctrl{Streamer: resampled, Paused: false}
+		} else {
+			ctrl = &beep.Ctrl{Streamer: streamer, Paused: false}
+		}
+
+		done := make(chan bool)
 		speaker.Play(beep.Seq(ctrl, beep.Callback(func() {
 			done <- true
 		})))
@@ -143,6 +168,11 @@ outer:
 
 				statusChan <- PlayStateUpdate{PlayState: noTrackLoaded}
 				statusChan <- PositionUpdate{Length: 0, Position: 0}
+				statusChan <- AudioInfoUpdate{
+					Artist: "",
+					Title:  "",
+					Album:  "",
+				}
 				ticker.Stop()
 				continue outer
 			case cmd := <-cmdChan:
@@ -171,6 +201,11 @@ outer:
 
 					statusChan <- PlayStateUpdate{PlayState: noTrackLoaded}
 					statusChan <- PositionUpdate{Length: 0, Position: 0}
+					statusChan <- AudioInfoUpdate{
+						Artist: "",
+						Title:  "",
+						Album:  "",
+					}
 					ticker.Stop()
 					continue outer
 				}

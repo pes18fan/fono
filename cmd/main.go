@@ -147,6 +147,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if didSelect, path := m.filepicker.DidSelectFile(msg); didSelect {
 			m.activeScreen = nowPlayingScreen
 			m.selectedFile = path
+			m.currentTitle = path // Will be overriden if valid tags are found
 			m.fileChan <- path
 			return m, listenForStatus(m.statusChan)
 		}
