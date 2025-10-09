@@ -210,6 +210,8 @@ func (m model) View() string {
 }
 
 func main() {
+	// Set up a logger to log to `debug.log` if the `DEBUG` environment variable
+	// has a value.
 	if len(os.Getenv("DEBUG")) > 0 {
 		f, err := tea.LogToFile("debug.log", "debug")
 		if err != nil {

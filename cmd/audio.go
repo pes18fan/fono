@@ -70,10 +70,10 @@ outer:
 
 		// Seek the file back to the start before creating the streamer
 		if _, err := f.Seek(0, io.SeekStart); err != nil {
-			statusChan <- ErrorUpdate{
-				fmt.Errorf("failed to seek back to start: %v", err),
-			}
 			f.Close()
+			statusChan <- ErrorUpdate{
+				fmt.Errorf("failed to seek back to start of file: %w", err),
+			}
 			continue outer
 		}
 
@@ -94,13 +94,14 @@ outer:
 			err = fmt.Errorf("only mp3, flac, wav and ogg formats are supported")
 		}
 		if err != nil {
-			statusChan <- ErrorUpdate{err}
 			f.Close()
+			statusChan <- ErrorUpdate{err}
 			continue outer
 		}
 
 		log.Println("set up streamer")
 
+		// Careful not to double-initialize the speaker!
 		if !initialized {
 			speaker.Init(format.SampleRate, format.SampleRate.N(time.Second/10))
 			initialized = true
@@ -131,8 +132,17 @@ outer:
 		for {
 			select {
 			case <-done:
+				log.Println("finished playing track", file)
+				// don't lock the speaker before clearing
+				// this is cuz speaker.Clear() already tries to lock it
+				speaker.Clear()
+
+				speaker.Lock()
 				streamer.Close()
+				speaker.Unlock()
+
 				statusChan <- PlayStateUpdate{PlayState: noTrackLoaded}
+				statusChan <- PositionUpdate{Length: 0, Position: 0}
 				ticker.Stop()
 				continue outer
 			case cmd := <-cmdChan:
@@ -153,9 +163,6 @@ outer:
 					statusChan <- PlayStateUpdate{PlayState: state}
 				case stop:
 					log.Println("received stop command")
-
-					// don't lock the speaker before clearing
-					// this is cuz speaker.Clear() already tries to lock it
 					speaker.Clear()
 
 					speaker.Lock()
