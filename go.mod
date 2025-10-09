@@ -1,4 +1,4 @@
-module fono
+module github.com/pes18fan/fono
 
 go 1.25.1
 
