@@ -6,8 +6,9 @@ require (
 	github.com/charmbracelet/bubbles v0.21.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
+	github.com/dhowden/tag v0.0.0-20240417053706-3d75831295e8
+	github.com/dolmen-go/kittyimg v0.0.0-20250610224728-874967bd8ea4
 	github.com/gopxl/beep v1.4.1
-	github.com/unitnotes/audiotag v0.1.0
 )
 
 require (

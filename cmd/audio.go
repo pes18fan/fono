@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dhowden/tag"
 	"github.com/gopxl/beep"
 	"github.com/gopxl/beep/flac"
 	"github.com/gopxl/beep/mp3"
 	"github.com/gopxl/beep/speaker"
 	"github.com/gopxl/beep/vorbis"
 	"github.com/gopxl/beep/wav"
-	tag "github.com/unitnotes/audiotag"
 )
 
 type AudioCommand int
@@ -59,7 +59,8 @@ outer:
 		log.Println("opened", file)
 
 		// Grab metadata
-		var artist, title, album string
+		var artist, title, album, art string
+		artBytes := []byte{}
 		m, err := tag.ReadFrom(f)
 		if err != nil {
 			log.Println("failed to read tags from", file, ":", err)
@@ -67,7 +68,20 @@ outer:
 			artist = m.Artist()
 			title = m.Title()
 			album = m.Album()
+
+			pic := m.Picture()
+			if pic != nil {
+				artBytes = pic.Data
+			} else {
+				log.Println("no artwork found")
+			}
+
 			log.Println("read tags from", file)
+		}
+
+		art, err = getEncodedImage(artBytes)
+		if err != nil {
+			log.Println("failed to read artwork:", err)
 		}
 
 		// Seek the file back to the start before creating the streamer
@@ -131,6 +145,7 @@ outer:
 				Artist: artist,
 				Title:  title,
 				Album:  album,
+				Art:    art,
 			}
 		}
 
@@ -172,6 +187,7 @@ outer:
 					Artist: "",
 					Title:  "",
 					Album:  "",
+					Art:    "",
 				}
 				ticker.Stop()
 				continue outer
@@ -205,16 +221,21 @@ outer:
 						Artist: "",
 						Title:  "",
 						Album:  "",
+						Art:    "",
 					}
 					ticker.Stop()
 					continue outer
 				}
 			case <-ticker.C:
 				speaker.Lock()
-				statusChan <- PositionUpdate{
-					Length:   format.SampleRate.D(streamer.Len()).Round(time.Second),
-					Position: format.SampleRate.D(streamer.Position()).Round(time.Second),
+				// don't bother sending position updates if paused
+				if !ctrl.Paused {
+					statusChan <- PositionUpdate{
+						Length:   format.SampleRate.D(streamer.Len()).Round(time.Second),
+						Position: format.SampleRate.D(streamer.Position()).Round(time.Second),
+					}
 				}
+
 				if ctrl.Paused != lastPaused {
 					lastPaused = ctrl.Paused
 
@@ -227,6 +248,7 @@ outer:
 
 					statusChan <- PlayStateUpdate{PlayState: state}
 				}
+
 				if streamer.Err() != nil {
 					streamer.Close()
 					statusChan <- PlayStateUpdate{PlayState: noTrackLoaded}

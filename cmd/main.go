@@ -42,6 +42,7 @@ type model struct {
 	currentArtist   string
 	currentTitle    string
 	currentAlbum    string
+	currentArt      string
 
 	progress progress.Model
 
@@ -88,6 +89,7 @@ func initialModel() model {
 		currentArtist:   "",
 		currentTitle:    "",
 		currentAlbum:    "",
+		currentArt:      "",
 
 		progress: prog,
 
@@ -117,6 +119,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentArtist = status.Artist
 			m.currentTitle = status.Title
 			m.currentAlbum = status.Album
+			m.currentArt = status.Art
 			log.Println("audio info updated")
 		case ErrorUpdate:
 			log.Fatalf("audio playback failed: %v", status.Err)
@@ -125,6 +128,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
+			log.Println("quit")
 			m.quitting = true
 			return m, tea.Quit
 		case "p":
@@ -203,6 +207,13 @@ func (m model) View() string {
 			s += "\n"
 		}
 
+		if m.currentArt != "" {
+			s += "\n\n"
+		}
+		s += centered(m.currentArt)
+		if m.currentArt != "" {
+			s += "\n"
+		}
 		s += "\n\n"
 
 		s += lipgloss.NewStyle().
