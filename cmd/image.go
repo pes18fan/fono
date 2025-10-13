@@ -12,10 +12,7 @@ import (
 func cropToSquare(img image.Image) image.Image {
 	b := img.Bounds()
 	w, h := b.Dx(), b.Dy()
-	size := w
-	if h < w {
-		size = h
-	}
+	size := min(h, w)
 	x0 := b.Min.X + (w-size)/2
 	y0 := b.Min.Y + (h-size)/2
 	rect := image.Rect(x0, y0, x0+size, y0+size)

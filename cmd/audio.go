@@ -52,7 +52,9 @@ outer:
 
 		f, err := os.Open(file)
 		if err != nil {
-			statusChan <- ErrorUpdate{err}
+			statusChan <- ErrorUpdate{
+				fmt.Errorf("failed to open file: %w", err),
+			}
 			continue outer
 		}
 		// Closing the streamer later will close the file itself, so don't defer close it here
@@ -111,7 +113,9 @@ outer:
 		}
 		if err != nil {
 			f.Close()
-			statusChan <- ErrorUpdate{err}
+			statusChan <- ErrorUpdate{
+				fmt.Errorf("failed to decode audio file: %w", err),
+			}
 			continue outer
 		}
 
