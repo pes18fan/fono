@@ -61,7 +61,8 @@ outer:
 		log.Println("opened", file)
 
 		// Grab metadata
-		var artist, title, album, art string
+		var artist, title, album string
+		var art terminalImage
 		artBytes := []byte{}
 		m, err := tag.ReadFrom(f)
 		if err != nil {
@@ -191,7 +192,7 @@ outer:
 					Artist: "",
 					Title:  "",
 					Album:  "",
-					Art:    "",
+					Art:    terminalImage{},
 				}
 				ticker.Stop()
 				continue outer
@@ -225,7 +226,7 @@ outer:
 						Artist: "",
 						Title:  "",
 						Album:  "",
-						Art:    "",
+						Art:    terminalImage{},
 					}
 					ticker.Stop()
 					continue outer

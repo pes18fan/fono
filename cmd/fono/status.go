@@ -39,7 +39,7 @@ type AudioInfoUpdate struct {
 	Artist string
 	Title  string
 	Album  string
-	Art    string
+	Art    terminalImage
 }
 
 func (AudioInfoUpdate) isStatus() {}
