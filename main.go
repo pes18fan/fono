@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/pes18fan/fono/termimg"
 )
 
 type activeScreen int
@@ -42,6 +43,7 @@ type model struct {
 	currentArtist   string
 	currentTitle    string
 	currentAlbum    string
+	currentArt      termimg.TerminalImage
 
 	progress progress.Model
 
@@ -88,6 +90,7 @@ func initialModel() model {
 		currentArtist:   "",
 		currentTitle:    "",
 		currentAlbum:    "",
+		currentArt:      termimg.TerminalImage{},
 
 		progress: prog,
 
@@ -117,6 +120,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentArtist = status.Artist
 			m.currentTitle = status.Title
 			m.currentAlbum = status.Album
+			m.currentArt = status.Art
 			log.Println("audio info updated")
 		case ErrorUpdate:
 			log.Fatalf("audio playback failed: %v", status.Err)
@@ -125,12 +129,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
+			termimg.ClearScreen()
+			log.Println("quit")
 			m.quitting = true
 			return m, tea.Quit
 		case "p":
 			m.cmdChan <- playpause
 		case "f":
 			if m.activeScreen == nowPlayingScreen {
+				termimg.ClearScreen()
 				m.activeScreen = songSelectScreen
 				m.selectedFile = ""
 				m.cmdChan <- stop
@@ -138,6 +145,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	case tea.WindowSizeMsg:
+		termimg.ClearScreen()
 		m.termHeight = msg.Height
 		m.termWidth = msg.Width
 	case clearErrorMsg:
@@ -203,6 +211,16 @@ func (m model) View() string {
 			s += "\n"
 		}
 
+		if m.currentArt.Data != "" {
+			s += "\n\n"
+		}
+		s += lipgloss.NewStyle().
+			Width(m.termWidth - m.currentArt.W).
+			Align(lipgloss.Center).
+			Render(m.currentArt.Data)
+		if m.currentArt.Data != "" {
+			s += "\n"
+		}
 		s += "\n\n"
 
 		s += lipgloss.NewStyle().
@@ -222,23 +240,25 @@ func (m model) View() string {
 		}
 
 		// TODO: Make the progress bar animated, following the docs by Charm
-		s += centeredStyle.
-			Bold(true).
-			Foreground(lipgloss.Color("#4fefca")).
-			Render("Progress")
-		s += "\n"
-		s += centered(m.progress.ViewAs(percent))
-		s += "\n\n"
+		if m.playState != noTrackLoaded {
+			s += centeredStyle.
+				Bold(true).
+				Foreground(lipgloss.Color("#4fefca")).
+				Render("Progress")
+			s += "\n"
+			s += centered(m.progress.ViewAs(percent))
+			s += "\n\n"
 
-		s += "\n"
-		s += lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#4fefca")).
-			Render("Controls: ")
-		s += "\n"
-		s += "    Press p to play/pause.\n"
-		s += "    Press f to pick another file.\n"
-		s += "    Press q to quit.\n"
+			s += "\n"
+			s += lipgloss.NewStyle().
+				Bold(true).
+				Foreground(lipgloss.Color("#4fefca")).
+				Render("Controls: ")
+			s += "\n"
+			s += "    Press p to play/pause.\n"
+			s += "    Press f to pick another file.\n"
+			s += "    Press q to quit.\n"
+		}
 	} else {
 		if m.err != nil {
 			s += centered(
