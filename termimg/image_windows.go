@@ -2,6 +2,7 @@ package termimg
 
 import (
 	"os"
+	"os/exec"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -32,4 +33,12 @@ func (t *TerminalImage) fixImageDimensions() {
 
 	t.W = cols * int(cfi.dwFontSize.X)
 	t.H = rows * int(cfi.dwFontSize.Y)
+}
+
+// Clear the screen using the OS-native command.
+// This is necessary to avoid visual glitches caused by showing the images.
+func ClearScreen() {
+	cmd := exec.Command("cmd", "/c", "cls")
+	cmd.Stdout = os.Stdout
+	cmd.Run()
 }

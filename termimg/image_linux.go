@@ -3,6 +3,7 @@ package termimg
 import (
 	"math"
 	"os"
+	"os/exec"
 
 	"golang.org/x/sys/unix"
 )
@@ -19,4 +20,12 @@ func (t *TerminalImage) fixImageDimensions() {
 	termPxHeight := int(ws.Ypixel)
 	cellHeight := float64(termPxHeight) / float64(termCols)
 	t.H /= int(math.Floor(cellHeight))
+}
+
+// Clear the screen using the OS-native command.
+// This is necessary to avoid visual glitches caused by showing the images.
+func ClearScreen() {
+	cmd := exec.Command("clear")
+	cmd.Stdout = os.Stdout
+	cmd.Run()
 }

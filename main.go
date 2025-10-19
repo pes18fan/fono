@@ -129,6 +129,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
+			termimg.ClearScreen()
 			log.Println("quit")
 			m.quitting = true
 			return m, tea.Quit
@@ -136,6 +137,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.cmdChan <- playpause
 		case "f":
 			if m.activeScreen == nowPlayingScreen {
+				termimg.ClearScreen()
 				m.activeScreen = songSelectScreen
 				m.selectedFile = ""
 				m.cmdChan <- stop
@@ -143,6 +145,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	case tea.WindowSizeMsg:
+		termimg.ClearScreen()
 		m.termHeight = msg.Height
 		m.termWidth = msg.Width
 	case clearErrorMsg:
@@ -211,7 +214,6 @@ func (m model) View() string {
 		if m.currentArt.Data != "" {
 			s += "\n\n"
 		}
-
 		s += lipgloss.NewStyle().
 			Width(m.termWidth - m.currentArt.W).
 			Align(lipgloss.Center).
@@ -238,23 +240,25 @@ func (m model) View() string {
 		}
 
 		// TODO: Make the progress bar animated, following the docs by Charm
-		s += centeredStyle.
-			Bold(true).
-			Foreground(lipgloss.Color("#4fefca")).
-			Render("Progress")
-		s += "\n"
-		s += centered(m.progress.ViewAs(percent))
-		s += "\n\n"
+		if m.playState != noTrackLoaded {
+			s += centeredStyle.
+				Bold(true).
+				Foreground(lipgloss.Color("#4fefca")).
+				Render("Progress")
+			s += "\n"
+			s += centered(m.progress.ViewAs(percent))
+			s += "\n\n"
 
-		s += "\n"
-		s += lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#4fefca")).
-			Render("Controls: ")
-		s += "\n"
-		s += "    Press p to play/pause.\n"
-		s += "    Press f to pick another file.\n"
-		s += "    Press q to quit.\n"
+			s += "\n"
+			s += lipgloss.NewStyle().
+				Bold(true).
+				Foreground(lipgloss.Color("#4fefca")).
+				Render("Controls: ")
+			s += "\n"
+			s += "    Press p to play/pause.\n"
+			s += "    Press f to pick another file.\n"
+			s += "    Press q to quit.\n"
+		}
 	} else {
 		if m.err != nil {
 			s += centered(
