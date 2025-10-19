@@ -1,4 +1,4 @@
-package main
+package termimg
 
 import (
 	"bytes"
@@ -9,10 +9,10 @@ import (
 	"github.com/dolmen-go/kittyimg"
 )
 
-type terminalImage struct {
-	w    int
-	h    int
-	data string
+type TerminalImage struct {
+	W    int
+	H    int
+	Data string
 }
 
 func cropToSquare(img image.Image) image.Image {
@@ -27,24 +27,27 @@ func cropToSquare(img image.Image) image.Image {
 	}).SubImage(rect)
 }
 
-func getEncodedImage(data []byte) (terminalImage, error) {
+func GetEncodedImage(data []byte) (TerminalImage, error) {
 	if len(data) == 0 {
-		return terminalImage{}, nil
+		return TerminalImage{}, nil
 	}
 
 	r := bytes.NewReader(data)
 	img, _, err := image.Decode(r)
 	if err != nil {
-		return terminalImage{}, err
+		return TerminalImage{}, err
 	}
 	square := cropToSquare(img)
 
 	var w bytes.Buffer
 	kittyimg.Fprint(&w, square)
 
-	return terminalImage{
-		w:    img.Bounds().Dx(),
-		h:    img.Bounds().Dy(),
-		data: w.String(),
-	}, nil
+	timg := TerminalImage{
+		W:    img.Bounds().Dx(),
+		H:    img.Bounds().Dy(),
+		Data: w.String(),
+	}
+	timg.fixImageDimensions()
+
+	return timg, nil
 }

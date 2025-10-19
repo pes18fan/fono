@@ -1,6 +1,10 @@
 package main
 
-import "time"
+import (
+	"time"
+
+	"github.com/pes18fan/fono/termimg"
+)
 
 type PlayState int
 
@@ -39,7 +43,7 @@ type AudioInfoUpdate struct {
 	Artist string
 	Title  string
 	Album  string
-	Art    terminalImage
+	Art    termimg.TerminalImage
 }
 
 func (AudioInfoUpdate) isStatus() {}

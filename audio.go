@@ -15,6 +15,7 @@ import (
 	"github.com/gopxl/beep/speaker"
 	"github.com/gopxl/beep/vorbis"
 	"github.com/gopxl/beep/wav"
+	"github.com/pes18fan/fono/termimg"
 )
 
 type AudioCommand int
@@ -62,7 +63,7 @@ outer:
 
 		// Grab metadata
 		var artist, title, album string
-		var art terminalImage
+		var art termimg.TerminalImage
 		artBytes := []byte{}
 		m, err := tag.ReadFrom(f)
 		if err != nil {
@@ -82,7 +83,7 @@ outer:
 			log.Println("read tags from", file)
 		}
 
-		art, err = getEncodedImage(artBytes)
+		art, err = termimg.GetEncodedImage(artBytes)
 		if err != nil {
 			log.Println("failed to read artwork:", err)
 		}
@@ -192,7 +193,7 @@ outer:
 					Artist: "",
 					Title:  "",
 					Album:  "",
-					Art:    terminalImage{},
+					Art:    termimg.TerminalImage{},
 				}
 				ticker.Stop()
 				continue outer
@@ -226,7 +227,7 @@ outer:
 						Artist: "",
 						Title:  "",
 						Album:  "",
-						Art:    terminalImage{},
+						Art:    termimg.TerminalImage{},
 					}
 					ticker.Stop()
 					continue outer

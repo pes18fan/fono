@@ -9,6 +9,7 @@ require (
 	github.com/dhowden/tag v0.0.0-20240417053706-3d75831295e8
 	github.com/dolmen-go/kittyimg v0.0.0-20250610224728-874967bd8ea4
 	github.com/gopxl/beep v1.4.1
+	golang.org/x/sys v0.36.0
 )
 
 require (
@@ -38,6 +39,5 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
-	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 )

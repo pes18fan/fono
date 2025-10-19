@@ -4,7 +4,6 @@ import (
 	"errors"
 	"io"
 	"log"
-	"math"
 	"os"
 	"time"
 
@@ -12,7 +11,7 @@ import (
 	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"golang.org/x/sys/unix"
+	"github.com/pes18fan/fono/termimg"
 )
 
 type activeScreen int
@@ -44,7 +43,7 @@ type model struct {
 	currentArtist   string
 	currentTitle    string
 	currentAlbum    string
-	currentArt      terminalImage
+	currentArt      termimg.TerminalImage
 
 	progress progress.Model
 
@@ -91,7 +90,7 @@ func initialModel() model {
 		currentArtist:   "",
 		currentTitle:    "",
 		currentAlbum:    "",
-		currentArt:      terminalImage{},
+		currentArt:      termimg.TerminalImage{},
 
 		progress: prog,
 
@@ -209,21 +208,15 @@ func (m model) View() string {
 			s += "\n"
 		}
 
-		if m.currentArt.data != "" {
+		if m.currentArt.Data != "" {
 			s += "\n\n"
 		}
 
-		ws, _ := unix.IoctlGetWinsize(int(os.Stdout.Fd()), unix.TIOCGWINSZ)
-		termCols := int(ws.Col)
-		termPxWidth := int(ws.Xpixel)
-		cellWidth := float64(termPxWidth) / float64(termCols)
-		imgCols := m.currentArt.w / int(math.Floor(cellWidth))
-
 		s += lipgloss.NewStyle().
-			Width(m.termWidth - imgCols).
+			Width(m.termWidth - m.currentArt.W).
 			Align(lipgloss.Center).
-			Render(m.currentArt.data)
-		if m.currentArt.data != "" {
+			Render(m.currentArt.Data)
+		if m.currentArt.Data != "" {
 			s += "\n"
 		}
 		s += "\n\n"
