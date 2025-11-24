@@ -32,7 +32,7 @@ the `fono` binary by running
 
 ```
 go mod tidy
-go build ./cmd
+go build .
 ```
 
 Have fun!
