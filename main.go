@@ -76,7 +76,7 @@ func initialModel() model {
 	fp.AllowedTypes = []string{".mp3", ".flac", ".wav", ".ogg"}
 	fp.DirAllowed = true
 
-	return model{
+	m := model{
 		activeScreen: songSelectScreen,
 		quitting:     false,
 
@@ -99,10 +99,27 @@ func initialModel() model {
 
 		err: nil,
 	}
+
+	if len(os.Args) > 1 {
+		// path to a file provided in args
+		path := os.Args[1]
+
+		m.activeScreen = nowPlayingScreen
+		m.selectedFile = path
+		m.currentTitle = path // Will be overriden if valid tags are found
+	}
+
+	return m
 }
 
 func (m model) Init() tea.Cmd {
-	return m.filepicker.Init()
+	if m.activeScreen == songSelectScreen {
+		return m.filepicker.Init()
+	} else {
+		// initial file provided while launching
+		m.fileChan <- m.selectedFile
+		return listenForStatus(m.statusChan)
+	}
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -226,6 +243,7 @@ func (m model) View() string {
 		s += lipgloss.NewStyle().
 			Bold(true).
 			Foreground(lipgloss.Color("#4fefca")).
+			AlignHorizontal(lipgloss.Right).
 			Render("Status: ")
 		s += map[PlayState]string{
 			paused:        "Paused",

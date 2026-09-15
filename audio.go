@@ -67,7 +67,7 @@ outer:
 		artBytes := []byte{}
 		m, err := tag.ReadFrom(f)
 		if err != nil {
-			log.Println("failed to read tags from", file, ":", err)
+			log.Printf("failed to read tags from %s: %v\n", file, err)
 		} else {
 			artist = m.Artist()
 			title = m.Title()
